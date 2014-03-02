@@ -10,7 +10,7 @@
 # See: https://github.com/dotcloud/docker/issues/1311
 #
 # This script should be started as follows:
-#   dockstart <container>
+#   dockstart <container> [stop/restart ttl]
 #
 # A TERM, INT, or QUIT signal received by the wrapper will be translated to a
 # "docker stop" command rather than being forwarded directly to the docker
@@ -35,38 +35,37 @@ log() {
   echo "[${PROGNAME}] $1"
 }
 
-receivedsignal() {
+log_signal_action() {
   log "Received signal $1, $2 container ${CONTAINER_ID}..."
   return
 }
 
 startcontainer() {
   log "Starting docker container ${CONTAINER_ID}..."
-  # start in the background so we can trap signals
   $DOCKERCMD start -a -i $CONTAINER_ID < /dev/stdin &
   WAITPID=$!
-}
-
-signal_stopcontainer() {
-  receivedsignal $1 "stopping"
-  $DOCKERCMD stop -t $STOPWAIT $CONTAINER_ID > /dev/null &
-  STOPPINGPID=$!
-}
-
-signal_restartcontainer() {
-  receivedsignal $1 "restarting"
-  # Restart will cause the current docker client process to exit so
-  # we need to re-attach and update WAITPID. Unfortunately some logs
-  # may be lost here since the attach happens only after the restart.
-  # Is there a better way?
-  $DOCKERCMD restart -t $STOPWAIT $CONTAINER_ID > /dev/null &
-  RESTARTPID=$!
 }
 
 reattachcontainer() {
   # Attach completes immediately if not connected to stdin
   $DOCKERCMD attach $CONTAINER_ID < /dev/stdin &
   WAITPID=$!
+}
+
+signal_stopcontainer() {
+  log_signal_action $1 "stopping"
+  $DOCKERCMD stop -t $STOPWAIT $CONTAINER_ID > /dev/null &
+  STOPPINGPID=$!
+}
+
+signal_restartcontainer() {
+  log_signal_action $1 "restarting"
+  # Restart will cause the current docker client process to exit so
+  # we need to re-attach and update WAITPID. Unfortunately some logs
+  # may be lost here since the attach happens only after the restart.
+  # Is there a better way?
+  $DOCKERCMD restart -t $STOPWAIT $CONTAINER_ID > /dev/null &
+  RESTARTPID=$!
 }
 
 # http://stackoverflow.com/a/2183063/430128
