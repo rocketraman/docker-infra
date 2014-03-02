@@ -47,13 +47,13 @@ startcontainer() {
   WAITPID=$!
 }
 
-stopcontainer() {
+signal_stopcontainer() {
   receivedsignal $1 "stopping"
   $DOCKERCMD stop -t $STOPWAIT $CONTAINER_ID > /dev/null &
   STOPPINGPID=$!
 }
 
-restartcontainer() {
+signal_restartcontainer() {
   receivedsignal $1 "restarting"
   # Restart will cause the current docker client process to exit so
   # we need to re-attach and update WAITPID. Unfortunately some logs
@@ -77,8 +77,8 @@ trapsig() {
   done
 }
 
-trapsig stopcontainer INT TERM QUIT
-trapsig restartcontainer HUP
+trapsig signal_stopcontainer INT TERM QUIT
+trapsig signal_restartcontainer HUP
 
 log "Starting wrapper (pid $SELFPID)"
 startcontainer
