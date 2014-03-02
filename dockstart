@@ -93,9 +93,11 @@ while [[ $WAITPID != 0 ]]; do
     wait $RESTARTPID
     RESTARTPID=0
     reattachcontainer
+    log "waitloop: Container ${CONTAINER_ID} restarted"
   elif [[ $STOPPINGPID != 0 ]]; then
     log "waitloop: Container ${CONTAINER_ID} exited with code ${result}, stop is pending..."
     wait $STOPPINGPID
+    log "waitloop: Container ${CONTAINER_ID} stopped"
     WAITPID=0
   else
     log "waitloop: Container ${CONTAINER_ID} exited with code $result"
@@ -104,4 +106,5 @@ while [[ $WAITPID != 0 ]]; do
   sleep 1
 done
 
+log "Stopping wrapper (pid $SELFPID), exit code = $result"
 exit $result
